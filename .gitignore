@@ -14,9 +14,9 @@ build/
 # Submodules / Third-party clones (Dependencies installed separately)
 tplink-omada-mcp/
 
-# Scratch & test scripts
-test-*.mjs
-test-*.js
+# Root level debug scripts
+/test-*.mjs
+/test-*.js
 scratch/
 .agents/
 
