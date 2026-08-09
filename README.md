@@ -59,7 +59,7 @@ A secure **Remote MCP (Model Context Protocol) OAuth 2.0 Gateway** designed to c
 Clone this repository on your Raspberry Pi:
 
 ```bash
-git clone <your-repo-url> omada-mcp
+git clone https://github.com/jkohen/omada-mcp.git
 cd omada-mcp
 npm install
 ```
@@ -114,6 +114,20 @@ Verify that your public endpoint is reachable:
 
 ```bash
 curl https://<your-pi-name>.<your-tailnet>.ts.net/health
+```
+
+---
+
+## 🧪 Automated Testing
+
+Run the included transport test suite to verify Gateway connectivity:
+
+```bash
+# Test local SSE transport
+npm test
+
+# Test public StreamableHTTP transport with OAuth 2.0 authentication
+npm run test:streamable
 ```
 
 ---
