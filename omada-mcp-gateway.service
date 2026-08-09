@@ -1,0 +1,29 @@
+[Unit]
+Description=Omada MCP OAuth 2.0 Gateway Service
+After=network.target tailscaled.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/omada-mcp
+ExecStart=/usr/bin/node /opt/omada-mcp/dist/index.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+# Security Hardening: Network Sandboxing
+# Strictly block all outbound internet traffic.
+# Only allow connections to localhost (127.0.0.1 for Tailscale Funnel)
+# and the local Omada Fusion 2.5G Gateway (192.168.1.1).
+IPAddressDeny=any
+IPAddressAllow=localhost 127.0.0.1 ::1 192.168.1.1 192.168.1.0/24
+
+# Security Hardening: Process & Filesystem Isolation
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/omada-mcp
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

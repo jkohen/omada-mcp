@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment files and credentials (CRITICAL: NEVER COMMIT REAL SECRETS)
+.env
+.env.local
+*.pem
+*.key
+
+# Submodules / Third-party clones (Dependencies installed separately)
+tplink-omada-mcp/
+
+# Scratch & test scripts
+test-*.mjs
+test-*.js
+scratch/
+.agents/
+
+# System and IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
