@@ -85,12 +85,32 @@ class OmadaFusionSession {
     return { token: this.token, omadacId: this.omadacId, cookieHeader: this.cookieHeader };
   }
 
-  async request(apiPath: string): Promise<any> {
+  async request(apiPath: string, extraParams: Record<string, any> = {}): Promise<any> {
     const { token, omadacId, cookieHeader } = await this.ensureLogin();
     const cleanPath = apiPath.startsWith("/") ? apiPath : `/${apiPath}`;
-    const url = `${this.baseUrl}/${omadacId}/api/v2${cleanPath}${cleanPath.includes("?") ? "&" : "?"}token=${token}`;
+    
+    // Parse URL & base path
+    const urlObj = new URL(`${this.baseUrl}/${omadacId}/api/v2${cleanPath}`);
+    urlObj.searchParams.set("token", token);
 
-    const res = await fetch(url, {
+    // Auto-inject default pagination/filter parameters for list endpoints if omitted
+    if (urlObj.pathname.includes("/clients")) {
+      if (!urlObj.searchParams.has("currentPage")) urlObj.searchParams.set("currentPage", "1");
+      if (!urlObj.searchParams.has("currentPageSize")) urlObj.searchParams.set("currentPageSize", "500");
+      if (!urlObj.searchParams.has("filters.active")) urlObj.searchParams.set("filters.active", "true");
+    } else if (urlObj.pathname.includes("/devices") || urlObj.pathname.includes("/logs")) {
+      if (!urlObj.searchParams.has("currentPage")) urlObj.searchParams.set("currentPage", "1");
+      if (!urlObj.searchParams.has("currentPageSize")) urlObj.searchParams.set("currentPageSize", "100");
+    }
+
+    // Append any extra args (excluding siteId)
+    for (const [k, v] of Object.entries(extraParams)) {
+      if (k !== "siteId" && v !== undefined && v !== null) {
+        urlObj.searchParams.set(k, String(v));
+      }
+    }
+
+    const res = await fetch(urlObj.toString(), {
       headers: {
         "Cookie": cookieHeader,
         "Csrf-Token": token,
@@ -361,6 +381,18 @@ const TOOLS_DEFINITIONS = [
   }
 ];
 
+// --- Declarative Tool Endpoint Registry ---
+const TOOL_ENDPOINT_MAP: Record<string, (siteId: string) => string> = {
+  listSites: () => "/sites",
+  listDevices: (siteId) => `/sites/${siteId}/devices`,
+  listClients: (siteId) => `/sites/${siteId}/clients`,
+  getGatewayDetail: (siteId) => `/sites/${siteId}/gateways`,
+  getDashboardOverview: (siteId) => `/sites/${siteId}/dashboard/overview`,
+  getDashboardWifiSummary: (siteId) => `/sites/${siteId}/dashboard/wlan-summary`,
+  getDashboardSwitchSummary: (siteId) => `/sites/${siteId}/dashboard/switch-summary`,
+  getClientsDistribution: (siteId) => `/sites/${siteId}/dashboard/client-distribution`
+};
+
 async function handleToolCall(name: string, args: any): Promise<any> {
   const defaultSiteId = omadaSession.getSiteId();
   const siteId = args?.siteId || defaultSiteId;
@@ -368,31 +400,13 @@ async function handleToolCall(name: string, args: any): Promise<any> {
   console.log(`[MCP Gateway] Executing tool '${name}' against Omada Fusion Gateway (site: ${siteId})`);
 
   try {
-    switch (name) {
-      case "listSites": {
-        const res = await omadaSession.request("/sites");
-        return { content: [{ type: "text", text: JSON.stringify(res.result || res, null, 2) }] };
-      }
-      case "listDevices": {
-        const res = await omadaSession.request(`/sites/${siteId}/devices`);
-        return { content: [{ type: "text", text: JSON.stringify(res.result || res, null, 2) }] };
-      }
-      case "listClients": {
-        const res = await omadaSession.request(`/sites/${siteId}/clients`);
-        return { content: [{ type: "text", text: JSON.stringify(res.result || res, null, 2) }] };
-      }
-      case "getGatewayDetail": {
-        const res = await omadaSession.request(`/sites/${siteId}/gateways`);
-        return { content: [{ type: "text", text: JSON.stringify(res.result || res, null, 2) }] };
-      }
-      case "getDashboardOverview": {
-        const res = await omadaSession.request(`/sites/${siteId}/dashboard/overview`);
-        return { content: [{ type: "text", text: JSON.stringify(res.result || res, null, 2) }] };
-      }
-      default: {
-        return { content: [{ type: "text", text: `Tool '${name}' executed.` }] };
-      }
+    const getEndpoint = TOOL_ENDPOINT_MAP[name];
+    if (getEndpoint) {
+      const endpoint = getEndpoint(siteId);
+      const res = await omadaSession.request(endpoint, args);
+      return { content: [{ type: "text", text: JSON.stringify(res.result || res, null, 2) }] };
     }
+    return { content: [{ type: "text", text: `Tool '${name}' not implemented in gateway.` }], isError: true };
   } catch (err: any) {
     console.error(`[MCP Gateway] Tool '${name}' execution error:`, err);
     return { content: [{ type: "text", text: `Error executing ${name}: ${err.message}` }], isError: true };
