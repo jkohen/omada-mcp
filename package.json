@@ -1,21 +1,26 @@
 {
   "name": "omada-mcp-oauth-gateway",
   "version": "1.0.0",
+  "type": "module",
   "description": "OAuth 2.0 Remote MCP SSE Gateway wrapping open-source Omada MCP server for Gemini integration via Tailscale Funnel",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "node tests/test-local-sse.mjs",
+    "test": "node tests/test-auth.mjs",
+    "test:auth": "node tests/test-auth.mjs",
     "test:streamable": "node tests/test-streamable-http.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.0",
+    "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^9.6.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

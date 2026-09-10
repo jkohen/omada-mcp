@@ -26,7 +26,6 @@ A secure **Remote MCP (Model Context Protocol) OAuth 2.0 Gateway** designed to c
 │    ├── GET  /.well-known/oauth-protected-resource           │
 │    ├── GET  /oauth/authorize (Redirect URI Handler)         │
 │    ├── POST /oauth/token     (OAuth 2.0 & OIDC Token Issue)  │
-│    ├── GET  /sse             (Remote MCP SSE Transport)     │
 │    └── POST /mcp             (StreamableHTTP Transport)     │
 │       │                                                     │
 │       ▼ (Local Web UI Session API)                          │
@@ -42,7 +41,7 @@ A secure **Remote MCP (Model Context Protocol) OAuth 2.0 Gateway** designed to c
 ## 🛠️ Key Features
 
 - **Standard OAuth 2.0 & OIDC Support**: Implements OAuth 2.0 Authorization Code Flow with PKCE, Dynamic Client Registration (RFC 7591), and Discovery Metadata (RFC 8414 / RFC 9470) required by Google Gemini.
-- **Dual Transport Support**: Supports both **StreamableHTTP** (`/mcp`) and **SSE** (`/sse`).
+- **StreamableHTTP Transport**: Uses standard **StreamableHTTP** (`/mcp` and `POST /`) compliant with the Model Context Protocol specification.
 - **Standalone Fusion Gateway Compatibility**: Automatically authenticates against local Omada Fusion Gateways via local Web UI session login (`POST /api/v2/login`), managing session cookies (`TPOMADA_SESSIONID`) and CSRF tokens automatically without needing TP-Link Cloud OpenAPI.
 
 ---
@@ -120,13 +119,13 @@ curl https://<your-pi-name>.<your-tailnet>.ts.net/health
 
 ## 🧪 Automated Testing
 
-Run the included transport test suite to verify Gateway connectivity:
+Run the included test suite to verify Gateway connectivity and authentication:
 
 ```bash
-# Test local SSE transport
+# Run authentication & security tests (verifies 401 on unauthorized, static token, and OAuth flows)
 npm test
 
-# Test public StreamableHTTP transport with OAuth 2.0 authentication
+# Test StreamableHTTP transport with OAuth 2.0 authentication and live controller query
 npm run test:streamable
 ```
 
@@ -142,13 +141,13 @@ npm run test:streamable
 2. Gemini will automatically complete the OAuth 2.0 handshake using discovery endpoints.
 
 ### Antigravity Setup
-Add the gateway to your `mcp_config.json`:
+Add the gateway to your MCP server configuration:
 
 ```json
 {
   "mcpServers": {
     "omada-mcp": {
-      "serverUrl": "https://<your-pi-name>.<your-tailnet>.ts.net/sse?access_token=<your_bearer_token>"
+      "serverUrl": "https://<your-pi-name>.<your-tailnet>.ts.net/mcp?access_token=<your_oauth_secret_or_token>"
     }
   }
 }

@@ -11,8 +11,6 @@ build/
 *.pem
 *.key
 
-# Submodules / Third-party clones (Dependencies installed separately)
-tplink-omada-mcp/
 
 # Root level debug scripts
 /test-*.mjs
