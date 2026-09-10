@@ -8,9 +8,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "test": "node tests/test-auth.mjs",
+    "test": "node tests/test-auth.mjs && node tests/test-streamable-http.mjs && node tests/test-verify-methods.mjs",
     "test:auth": "node tests/test-auth.mjs",
-    "test:streamable": "node tests/test-streamable-http.mjs"
+    "test:streamable": "node tests/test-streamable-http.mjs",
+    "test:methods": "node tests/test-verify-methods.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.0",

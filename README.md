@@ -119,14 +119,16 @@ curl https://<your-pi-name>.<your-tailnet>.ts.net/health
 
 ## 🧪 Automated Testing
 
-Run the included test suite to verify Gateway connectivity and authentication:
+Run the included test suite to verify Gateway connectivity, authentication, and live tool queries:
 
 ```bash
-# Run authentication & security tests (verifies 401 on unauthorized, static token, and OAuth flows)
+# Run all tests sequentially (Auth suite, StreamableHTTP handshake, and Omada tool verification)
 npm test
 
-# Test StreamableHTTP transport with OAuth 2.0 authentication and live controller query
-npm run test:streamable
+# Or run individual test suites:
+npm run test:auth         # Authentication & security tests (401 rejections, static tokens, OAuth JWT)
+npm run test:streamable   # StreamableHTTP transport & protocol handshake
+npm run test:methods      # Live Omada controller method verification (sites, devices, clients, dashboard)
 ```
 
 ---

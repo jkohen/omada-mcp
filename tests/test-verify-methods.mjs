@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
@@ -80,55 +81,53 @@ async function verifyMethods() {
 
   // 4. Test listSites
   const sites = await testMethod('listSites');
-  if (Array.isArray(sites)) {
-    console.log(`   ✅ PASS: listSites returned ${sites.length} site(s):`);
-    for (const s of sites) {
-      console.log(`      • Site Name: "${s.name}", ID: ${s.id}, Public IP: ${s.sitePublicIp || 'N/A'}`);
-    }
+  assert.ok(Array.isArray(sites) && sites.length > 0, 'Expected listSites to return at least one site');
+  console.log(`   ✅ PASS: listSites returned ${sites.length} site(s):`);
+  for (const s of sites) {
+    console.log(`      • Site Name: "${s.name}", ID: ${s.id}, Public IP: ${s.sitePublicIp || 'N/A'}`);
   }
   console.log('');
 
   // 5. Test listDevices
   const devices = await testMethod('listDevices');
-  if (Array.isArray(devices)) {
-    console.log(`   ✅ PASS: listDevices returned ${devices.length} device(s):`);
-    for (const d of devices) {
-      console.log(`      • [${d.type || 'Device'}] ${d.name || d.model} (Model: ${d.model}, IP: ${d.ip}, MAC: ${d.mac}, Status: ${d.status})`);
-    }
+  assert.ok(Array.isArray(devices) && devices.length > 0, 'Expected listDevices to return at least one device');
+  console.log(`   ✅ PASS: listDevices returned ${devices.length} device(s):`);
+  for (const d of devices) {
+    console.log(`      • [${d.type || 'Device'}] ${d.name || d.model} (Model: ${d.model}, IP: ${d.ip}, MAC: ${d.mac}, Status: ${d.status})`);
   }
   console.log('');
 
   // 6. Test listClients
   const clients = await testMethod('listClients');
-  if (Array.isArray(clients)) {
-    const wirelessCount = clients.filter(c => c.wireless).length;
-    const wiredCount = clients.filter(c => !c.wireless).length;
-    console.log(`   ✅ PASS: listClients returned ${clients.length} active client(s):`);
-    console.log(`      • Wireless clients: ${wirelessCount}`);
-    console.log(`      • Wired clients:    ${wiredCount}`);
-    const sampleClients = clients.slice(0, 5);
-    for (const c of sampleClients) {
-      console.log(`      • Client: "${c.name || c.hostName || 'Unnamed'}" | IP: ${c.ip} | MAC: ${c.mac} | Network: ${c.wireless ? 'WiFi (' + c.ssid + ')' : 'Wired'}`);
-    }
-    if (clients.length > 5) {
-      console.log(`      ... and ${clients.length - 5} more clients.`);
-    }
+  assert.ok(Array.isArray(clients), 'Expected listClients to return an array');
+  const wirelessCount = clients.filter(c => c.wireless).length;
+  const wiredCount = clients.filter(c => !c.wireless).length;
+  console.log(`   ✅ PASS: listClients returned ${clients.length} active client(s):`);
+  console.log(`      • Wireless clients: ${wirelessCount}`);
+  console.log(`      • Wired clients:    ${wiredCount}`);
+  const sampleClients = clients.slice(0, 5);
+  for (const c of sampleClients) {
+    console.log(`      • Client: "${c.name || c.hostName || 'Unnamed'}" | IP: ${c.ip} | MAC: ${c.mac} | Network: ${c.wireless ? 'WiFi (' + c.ssid + ')' : 'Wired'}`);
+  }
+  if (clients.length > 5) {
+    console.log(`      ... and ${clients.length - 5} more clients.`);
   }
   console.log('');
 
   // 7. Test getDashboardOverview
   const overview = await testMethod('getDashboardOverview');
-  if (overview && typeof overview === 'object') {
-    console.log('   ✅ PASS: getDashboardOverview returned telemetry:');
-    console.log(`      • Gateway Status: ${overview.gatewayStatus ?? 'N/A'}`);
-    console.log(`      • Total APs: ${overview.totalApNum ?? 'N/A'} (Connected: ${overview.connectedApNum ?? 'N/A'})`);
-    console.log(`      • Total Switches: ${overview.totalSwitchNum ?? 'N/A'} (Connected: ${overview.connectedSwitchNum ?? 'N/A'})`);
-    console.log(`      • Total Users: ${overview.totalUserNum ?? 'N/A'} (Wireless: ${overview.wirelessUserNum ?? 'N/A'}, Wired: ${overview.wiredUserNum ?? 'N/A'})`);
-  }
+  assert.ok(overview && typeof overview === 'object', 'Expected getDashboardOverview to return an object');
+  console.log('   ✅ PASS: getDashboardOverview returned telemetry:');
+  console.log(`      • Gateway Status: ${overview.gatewayStatus ?? 'N/A'}`);
+  console.log(`      • Total APs: ${overview.totalApNum ?? 'N/A'} (Connected: ${overview.connectedApNum ?? 'N/A'})`);
+  console.log(`      • Total Switches: ${overview.totalSwitchNum ?? 'N/A'} (Connected: ${overview.connectedSwitchNum ?? 'N/A'})`);
+  console.log(`      • Total Users: ${overview.totalUserNum ?? 'N/A'} (Wireless: ${overview.wirelessUserNum ?? 'N/A'}, Wired: ${overview.wiredUserNum ?? 'N/A'})`);
   console.log('');
 
   // 8. Test getGatewayDetail
-  const gwDetail = await testMethod('getGatewayDetail', { gatewayMac: '00-11-22-33-44-55' });
+  const gatewayDevice = devices.find(d => d.type === 'gateway' || d.model?.toLowerCase().includes('fusion'));
+  const gwMac = gatewayDevice?.mac || '00-11-22-33-44-55';
+  const gwDetail = await testMethod('getGatewayDetail', { gatewayMac: gwMac });
   if (gwDetail) {
     console.log('   ✅ PASS: getGatewayDetail returned details:');
     console.log(`      • Gateway: ${gwDetail.name || 'Gateway'} (Model: ${gwDetail.model}, IP: ${gwDetail.ip}, Firmware: ${gwDetail.firmwareVersion || gwDetail.version})`);
@@ -136,7 +135,7 @@ async function verifyMethods() {
   console.log('');
 
   // 9. Test getGatewayWanStatus
-  const wanStatus = await testMethod('getGatewayWanStatus', { gatewayMac: '00-11-22-33-44-55' });
+  const wanStatus = await testMethod('getGatewayWanStatus', { gatewayMac: gwMac });
   if (wanStatus) {
     console.log('   ✅ PASS: getGatewayWanStatus returned WAN details:');
     console.log(`      • WAN Status:`, JSON.stringify(wanStatus).slice(0, 140) + '...');
@@ -144,7 +143,9 @@ async function verifyMethods() {
   console.log('');
 
   // 10. Test getDevice (fetch single device detail)
-  const device = await testMethod('getDevice', { deviceId: '00-11-22-33-44-66' });
+  const apDevice = devices.find(d => d.type === 'ap' || d.mac !== gwMac);
+  const devId = apDevice?.mac || '00-11-22-33-44-66';
+  const device = await testMethod('getDevice', { deviceId: devId });
   if (device) {
     console.log('   ✅ PASS: getDevice returned AP details:');
     console.log(`      • Device: "${device.name}" (Model: ${device.model}, IP: ${device.ip}, MAC: ${device.mac}, Status: ${device.status})`);
@@ -152,7 +153,9 @@ async function verifyMethods() {
   console.log('');
 
   // 11. Test getClientDetail
-  const clientDetail = await testMethod('getClientDetail', { clientMac: '00-11-22-33-44-77' });
+  const sampleClient = clients.find(c => c.mac);
+  const clientMac = sampleClient?.mac || '00-11-22-33-44-77';
+  const clientDetail = await testMethod('getClientDetail', { clientMac: clientMac });
   if (clientDetail) {
     console.log('   ✅ PASS: getClientDetail returned client details:');
     console.log(`      • Client: "${clientDetail.name}" (IP: ${clientDetail.ip}, MAC: ${clientDetail.mac}, SSID: ${clientDetail.ssid || 'N/A'}, Signal: ${clientDetail.signalLevel || clientDetail.rssi} dBm)`);
@@ -160,7 +163,7 @@ async function verifyMethods() {
   console.log('');
 
   await client.close();
-  console.log('=== Method Verification Run Completed ===');
+  console.log('\n=== All Method Verification Tests Completed Successfully! ===\n');
 }
 
 verifyMethods().catch(err => {
