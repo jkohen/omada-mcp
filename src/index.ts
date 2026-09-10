@@ -154,14 +154,16 @@ const authenticateBearer = (req: Request, res: Response, next: NextFunction) => 
     }
   }
 
-  if (!token) {
-    const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
-    const protocol = req.headers["x-forwarded-proto"] || "https";
-    const baseUrl = `${protocol}://${host}`;
+  const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
+  const protocol = req.headers["x-forwarded-proto"] || "https";
+  const baseUrl = `${protocol}://${host}`;
 
+  console.log(`[AUTH DEBUG] ${req.method} ${req.originalUrl} from ${req.ip} | Token: ${token ? 'Found' : 'MISSING'} | AuthHeader: ${req.headers.authorization ? 'Present' : 'None'}`);
+
+  if (!token) {
     res.setHeader(
       "WWW-Authenticate",
-      `Bearer realm="omada-mcp", authorization_uri="${baseUrl}/oauth/authorize", token_uri="${baseUrl}/oauth/token", as_uri="${baseUrl}"`
+      `Bearer resource_metadata="${baseUrl}/.well-known/oauth-protected-resource/mcp", realm="omada-mcp", authorization_uri="${baseUrl}/oauth/authorize", token_uri="${baseUrl}/oauth/token", as_uri="${baseUrl}"`
     );
     res.status(401).json({
       id: APP_ID,
@@ -317,7 +319,7 @@ const getProtectedResourceMetadata = (req: Request) => {
   const baseUrl = `${protocol}://${host}`;
 
   return {
-    resource: baseUrl,
+    resource: `${baseUrl}/mcp`,
     authorization_servers: [baseUrl],
     authorization_endpoint: `${baseUrl}/oauth/authorize`,
     token_endpoint: `${baseUrl}/oauth/token`,
