@@ -55,6 +55,8 @@ async function verifyMethods() {
   for (const [prefix, count] of Object.entries(counts)) {
     console.log(`     - ${prefix}*: ${count} tools`);
   }
+  const sampleWithAnnotations = toolsList.tools.find(t => t.annotations);
+  console.log(`\n   Sample tool annotations check (${sampleWithAnnotations?.name}):`, JSON.stringify(sampleWithAnnotations?.annotations, null, 2));
   console.log('');
 
   async function testMethod(name, args = {}) {
