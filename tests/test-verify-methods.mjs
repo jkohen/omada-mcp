@@ -55,8 +55,13 @@ async function verifyMethods() {
   for (const [prefix, count] of Object.entries(counts)) {
     console.log(`     - ${prefix}*: ${count} tools`);
   }
-  const sampleWithAnnotations = toolsList.tools.find(t => t.annotations);
-  console.log(`\n   Sample tool annotations check (${sampleWithAnnotations?.name}):`, JSON.stringify(sampleWithAnnotations?.annotations, null, 2));
+  const readSample = toolsList.tools.find(t => t.name === 'listSites');
+  const rebootSample = toolsList.tools.find(t => t.name === 'rebootDevice');
+  const blockSample = toolsList.tools.find(t => t.name === 'blockClient');
+  console.log(`\n   Tool annotations check:`);
+  console.log(`     - listSites:   `, JSON.stringify(readSample?.annotations));
+  console.log(`     - rebootDevice:`, JSON.stringify(rebootSample?.annotations));
+  console.log(`     - blockClient: `, JSON.stringify(blockSample?.annotations));
   console.log('');
 
   async function testMethod(name, args = {}) {
