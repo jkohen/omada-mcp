@@ -167,10 +167,12 @@ export function inferToolAnnotations(name: string, description?: string): ToolAn
         idempotentHint = true;
     } else if (
         lowerName.startsWith('set') ||
+        lowerName.startsWith('update') ||
         lowerName.startsWith('enable') ||
         lowerName.startsWith('disable') ||
         lowerName.startsWith('block') ||
-        lowerName.startsWith('unblock')
+        lowerName.startsWith('unblock') ||
+        lowerName.startsWith('locate')
     ) {
         idempotentHint = true;
     } else {

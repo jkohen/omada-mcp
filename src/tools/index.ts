@@ -3,6 +3,9 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolCategory, ToolPermission } from '../config.js';
 import type { OmadaClient } from '../omadaClient/index.js';
 import { logger } from '../utils/logger.js';
+import { registerClientMutationTools } from './clientMutations.js';
+import { registerDeviceMutationTools } from './deviceMutations.js';
+import { registerWirelessMutationTools } from './wirelessMutations.js';
 import { registerDisableClientRateLimitTool } from './disableClientRateLimit.js';
 import { registerGetAccessControlTool } from './getAccessControl.js';
 import { registerGetAclConfigTypeSettingTool } from './getAclConfigTypeSetting.js';
@@ -374,6 +377,7 @@ const TOOL_REGISTRY: ToolEntry[] = [
     { fn: registerListUpgradeOverviewFirmwaresTool, category: 'devices-general', permission: 'read' },
     { fn: registerListSitesStacksTool, category: 'devices-general', permission: 'read' },
     { fn: registerGetSitesDeviceWhiteListTool, category: 'devices-general', permission: 'read' },
+    { fn: registerDeviceMutationTools, category: 'devices-general', permission: 'write' },
 
     // --- Devices (switch) ---
     { fn: registerGetSwitchStackDetailTool, category: 'devices-switch', permission: 'read' },
@@ -433,6 +437,7 @@ const TOOL_REGISTRY: ToolEntry[] = [
     { fn: registerSetClientRateLimitTool, category: 'clients', permission: 'write' },
     { fn: registerSetClientRateLimitProfileTool, category: 'clients', permission: 'write' },
     { fn: registerDisableClientRateLimitTool, category: 'clients', permission: 'write' },
+    { fn: registerClientMutationTools, category: 'clients', permission: 'write' },
 
     // --- Client insights ---
     { fn: registerListMostActiveClientsTool, category: 'client-insights', permission: 'read' },
@@ -534,6 +539,7 @@ const TOOL_REGISTRY: ToolEntry[] = [
     { fn: registerGetSsidDetailTool, category: 'wireless-ssid', permission: 'read' },
     { fn: registerListAllSsidsTool, category: 'wireless-ssid', permission: 'read' },
     { fn: registerGetSsidsBySiteTool, category: 'wireless-ssid', permission: 'read' },
+    { fn: registerWirelessMutationTools, category: 'wireless-ssid', permission: 'write' },
 
     // --- Wireless radio ---
     { fn: registerGetRadioFrequencyPlanningConfigTool, category: 'wireless-radio', permission: 'read' },

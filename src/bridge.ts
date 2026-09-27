@@ -44,8 +44,13 @@ export function createBridgedOmadaClient(session: OmadaSessionProvider): {
     const { token, omadacId: activeOmadacId, cookieHeader } = await session.ensureLogin();
 
     if (config.url) {
-      // Rewrite OpenAPI path: /openapi/v1/:omadacId/sites/... -> /:omadacId/api/v2/sites/...
-      config.url = config.url.replace(/^\/openapi\/v[0-9]+\/[^/]+/, `/${activeOmadacId}/api/v2`);
+      if (config.url.startsWith("/openapi/")) {
+        // Rewrite OpenAPI path: /openapi/v1/:omadacId/sites/... -> /:omadacId/api/v2/sites/...
+        config.url = config.url.replace(/^\/openapi\/v[0-9]+\/[^/]+/, `/${activeOmadacId}/api/v2`);
+      } else if (!config.url.startsWith(`/${activeOmadacId}/api/v2`)) {
+        const normalized = config.url.startsWith("/") ? config.url : `/${config.url}`;
+        config.url = `/${activeOmadacId}/api/v2${normalized}`;
+      }
       // Rewrite overview-diagram to local overview endpoint
       config.url = config.url.replace(/\/dashboard\/overview-diagram/, "/dashboard/overview");
     }
@@ -109,7 +114,7 @@ export function createBridgedOmadaClient(session: OmadaSessionProvider): {
     }
   );
 
-  const rawCategories = process.env.OMADA_TOOL_CATEGORIES || "all:r";
+  const rawCategories = process.env.OMADA_TOOL_CATEGORIES || "all";
   const { categories } = parseToolCategories(rawCategories);
 
   return { client, activeCategories: categories };
