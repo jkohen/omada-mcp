@@ -117,6 +117,87 @@ export function wrapToolHandler<Args extends z.ZodRawShape>(
     };
 }
 
+export interface ToolAnnotations {
+    readOnlyHint: boolean;
+    destructiveHint: boolean;
+    idempotentHint: boolean;
+    openWorldHint: boolean;
+}
+
+export function inferToolAnnotations(name: string, description?: string): ToolAnnotations {
+    const lowerName = name.toLowerCase();
+    const desc = (description || '').toLowerCase();
+
+    // 1. readOnlyHint:
+    // Pure inspection / telemetry / get / list / show / check
+    const isRead =
+        lowerName.startsWith('get') ||
+        lowerName.startsWith('list') ||
+        lowerName.startsWith('show') ||
+        lowerName.startsWith('check') ||
+        lowerName.startsWith('is') ||
+        lowerName.startsWith('find') ||
+        lowerName.startsWith('search') ||
+        lowerName.startsWith('describe');
+
+    const readOnlyHint = isRead;
+
+    // 2. destructiveHint:
+    // Deletes resources or causes hardware disruption / packet loss (reboots)
+    const isDestructive =
+        lowerName.includes('delete') ||
+        lowerName.includes('remove') ||
+        lowerName.includes('factoryreset') ||
+        lowerName.includes('reset') ||
+        lowerName.includes('reboot') ||
+        lowerName.includes('restart') ||
+        lowerName.includes('purge') ||
+        lowerName.includes('destroy') ||
+        lowerName.includes('format') ||
+        desc.includes('permanent') ||
+        desc.includes('destructive');
+
+    const destructiveHint = !isRead && isDestructive;
+
+    // 3. idempotentHint:
+    // Reads are idempotent. State-setters (set, enable, disable, block, unblock) are idempotent.
+    // Repeating operations like reboot, create, test, or trigger are not idempotent.
+    let idempotentHint = false;
+    if (readOnlyHint) {
+        idempotentHint = true;
+    } else if (
+        lowerName.startsWith('set') ||
+        lowerName.startsWith('enable') ||
+        lowerName.startsWith('disable') ||
+        lowerName.startsWith('block') ||
+        lowerName.startsWith('unblock')
+    ) {
+        idempotentHint = true;
+    } else {
+        idempotentHint = false;
+    }
+
+    // 4. openWorldHint:
+    // Closed domain (local 192.168.1.1) for almost everything.
+    // openWorldHint = true only if it accesses external internet / TP-Link cloud services.
+    const isOpenWorld =
+        lowerName.includes('speedtest') ||
+        lowerName.includes('cloud') ||
+        lowerName.includes('firmwareupgrade') ||
+        lowerName.includes('autocheckupgrade') ||
+        lowerName.includes('external') ||
+        lowerName.includes('ddns');
+
+    const openWorldHint = isOpenWorld;
+
+    return {
+        readOnlyHint,
+        destructiveHint,
+        idempotentHint,
+        openWorldHint,
+    };
+}
+
 function setupServerLogging(server: McpServer): void {
     const protocol = server.server;
     type RequestSchema = Parameters<typeof protocol.setRequestHandler>[0];
@@ -134,7 +215,19 @@ function setupServerLogging(server: McpServer): void {
             logger.info('MCP request received', logFields);
 
             try {
-                const result = await handler(request, extra);
+                let result = await handler(request, extra);
+                if (method === 'tools/list' && result && typeof result === 'object' && Array.isArray((result as any).tools)) {
+                    (result as any).tools = (result as any).tools.map((tool: any) => {
+                        const inferred = inferToolAnnotations(tool.name, tool.description);
+                        return {
+                            ...tool,
+                            annotations: {
+                                ...inferred,
+                                ...(tool.annotations || {}),
+                            },
+                        };
+                    });
+                }
                 const summary = summarizeSuccess(method, result);
                 logger.info('MCP request handled', summary ? { method, sessionId, ...summary } : { method, sessionId });
                 return result;
