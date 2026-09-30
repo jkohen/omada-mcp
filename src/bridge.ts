@@ -53,6 +53,14 @@ export function createBridgedOmadaClient(session: OmadaSessionProvider): {
       }
       // Rewrite overview-diagram to local overview endpoint
       config.url = config.url.replace(/\/dashboard\/overview-diagram/, "/dashboard/overview");
+      // Map OpenAPI paths to Omada Fusion Controller local API paths
+      config.url = config.url
+        .replace(/\/logs\/events$/, "/events")
+        .replace(/\/logs\/alerts$/, "/alerts")
+        .replace(/\/sites\/([^/]+)\/aps(\/|$)/, "/sites/$1/eaps$2")
+        .replace(/\/sites\/([^/]+)\/lan-networks(\/|$)/, "/sites/$1/setting/lan/networks$2")
+        .replace(/\/sites\/([^/]+)\/wireless-network\/wlans(\/|$)/, "/sites/$1/setting/wlans$2")
+        .replace(/\/sites\/([^/]+)\/profiles\/bonjour-service(\/|$)/, "/sites/$1/setting/mdns$2");
     }
 
     config.headers = config.headers || {};
@@ -83,7 +91,14 @@ export function createBridgedOmadaClient(session: OmadaSessionProvider): {
       if (config.params.currentPageSize === undefined) {
         config.params.currentPageSize = 500;
       }
-    } else if (config.url && (config.url.includes("/devices") || config.url.includes("/logs"))) {
+    } else if (
+      config.url &&
+      (config.url.includes("/devices") ||
+        config.url.includes("/logs") ||
+        config.url.includes("/events") ||
+        config.url.includes("/alerts") ||
+        config.url.includes("/setting/lan/networks"))
+    ) {
       if (config.params.currentPage === undefined) {
         config.params.currentPage = 1;
       }

@@ -169,6 +169,54 @@ async function verifyMethods() {
   }
   console.log('');
 
+  // 12. Test getApDetail
+  const apDetail = await testMethod('getApDetail', { apMac: devId });
+  if (apDetail) {
+    console.log('   ✅ PASS: getApDetail returned AP hardware details:');
+    console.log(`      • AP Name: "${apDetail.name}" (Model: ${apDetail.model}, Firmware: ${apDetail.firmwareVersion || apDetail.version})`);
+  }
+  console.log('');
+
+  // 13. Test listSiteEvents
+  const eventsResult = await testMethod('listSiteEvents', { page: 1, pageSize: 5 });
+  if (eventsResult) {
+    console.log('   ✅ PASS: listSiteEvents returned event log structure:');
+    console.log(`      • Total Events: ${eventsResult.totalRows ?? '0'} (Page size: ${eventsResult.currentSize ?? '5'})`);
+  }
+  console.log('');
+
+  // 14. Test listSiteAlerts
+  const alertsResult = await testMethod('listSiteAlerts', { page: 1, pageSize: 5 });
+  if (alertsResult) {
+    console.log('   ✅ PASS: listSiteAlerts returned alert log structure:');
+    console.log(`      • Total Alerts: ${alertsResult.totalRows ?? '0'} (Page size: ${alertsResult.currentSize ?? '5'})`);
+  }
+  console.log('');
+
+  // 15. Test getLanNetworkListV2
+  const lanNetworks = await testMethod('getLanNetworkListV2', { page: 1, pageSize: 10 });
+  if (lanNetworks) {
+    console.log('   ✅ PASS: getLanNetworkListV2 returned LAN network list:');
+    console.log(`      • Networks count: ${lanNetworks.totalRows ?? lanNetworks.data?.length ?? 'N/A'}`);
+  }
+  console.log('');
+
+  // 16. Test getWlanGroupList
+  const wlanGroups = await testMethod('getWlanGroupList');
+  if (wlanGroups) {
+    console.log('   ✅ PASS: getWlanGroupList returned WLAN groups:');
+    console.log(`      • WLAN Groups: ${wlanGroups.data?.map(w => w.name).join(', ') || 'N/A'}`);
+  }
+  console.log('');
+
+  // 17. Test listMdnsProfile
+  const mdnsProfile = await testMethod('listMdnsProfile');
+  if (mdnsProfile) {
+    console.log('   ✅ PASS: listMdnsProfile returned mDNS configuration:');
+    console.log(`      • mDNS:`, JSON.stringify(mdnsProfile));
+  }
+  console.log('');
+
   await client.close();
   console.log('\n=== All Method Verification Tests Completed Successfully! ===\n');
 }
