@@ -28,7 +28,7 @@ export class LogOperations {
      */
     public async listSiteEvents(options: LogQueryOptions, siteId?: string, customHeaders?: CustomHeaders): Promise<PaginatedResult<unknown>> {
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/logs/events`);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/events`);
 
         const params: Record<string, unknown> = {
             page: options.page,
@@ -55,7 +55,7 @@ export class LogOperations {
      */
     public async listSiteAlerts(options: LogQueryOptions, siteId?: string, customHeaders?: CustomHeaders): Promise<PaginatedResult<unknown>> {
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/logs/alerts`);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/alerts`);
 
         const params: Record<string, unknown> = {
             page: options.page,

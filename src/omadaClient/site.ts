@@ -47,6 +47,26 @@ export class SiteOperations {
     }
 
     /**
+     * Get unified site settings (configuration, resources, features, auto-upgrade).
+     */
+    public async getSiteSettings(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
+        const resolvedSiteId = this.resolveSiteId(siteId);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/setting`);
+        const response = await this.request.get<OmadaApiResponse<unknown>>(path, undefined, customHeaders);
+        return this.request.ensureSuccess(response);
+    }
+
+    /**
+     * Get unified site services (mesh, roaming, band steering, beacon control, LLDP, LED, remote logging).
+     */
+    public async getSiteServiceSettings(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
+        const resolvedSiteId = this.resolveSiteId(siteId);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/setting/service`);
+        const response = await this.request.get<OmadaApiResponse<unknown>>(path, undefined, customHeaders);
+        return this.request.ensureSuccess(response);
+    }
+
+    /**
      * Get site URL.
      * OperationId: getSiteUrlByOpenApi
      */

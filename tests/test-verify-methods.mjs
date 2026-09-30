@@ -141,11 +141,11 @@ async function verifyMethods() {
   }
   console.log('');
 
-  // 9. Test getGatewayWanStatus
-  const wanStatus = await testMethod('getGatewayWanStatus', { gatewayMac: gwMac });
-  if (wanStatus) {
-    console.log('   ✅ PASS: getGatewayWanStatus returned WAN details:');
-    console.log(`      • WAN Status:`, JSON.stringify(wanStatus).slice(0, 140) + '...');
+  // 9. Test getGatewayPorts
+  const gwPorts = await testMethod('getGatewayPorts', { gatewayMac: gwMac });
+  if (gwPorts) {
+    console.log('   ✅ PASS: getGatewayPorts returned gateway port details:');
+    console.log(`      • Ports configured: ${Array.isArray(gwPorts) ? gwPorts.length : 'N/A'}`);
   }
   console.log('');
 
@@ -214,6 +214,32 @@ async function verifyMethods() {
   if (mdnsProfile) {
     console.log('   ✅ PASS: listMdnsProfile returned mDNS configuration:');
     console.log(`      • mDNS:`, JSON.stringify(mdnsProfile));
+  }
+  console.log('');
+
+  // 18. Test getSiteSettings
+  const siteSettings = await testMethod('getSiteSettings');
+  if (siteSettings) {
+    console.log('   ✅ PASS: getSiteSettings returned native site settings:');
+    console.log(`      • Site Config Keys: ${Object.keys(siteSettings).slice(0, 6).join(', ')}...`);
+  }
+  console.log('');
+
+  // 19. Test getSiteServiceSettings
+  const serviceSettings = await testMethod('getSiteServiceSettings');
+  if (serviceSettings) {
+    console.log('   ✅ PASS: getSiteServiceSettings returned native site services:');
+    console.log(`      • Fast Roaming: ${serviceSettings.roaming?.fastRoamingEnable ? 'Enabled' : 'Disabled'}`);
+    console.log(`      • Mesh: ${serviceSettings.mesh?.meshEnable ? 'Enabled' : 'Disabled'}`);
+    console.log(`      • Band Steering: ${serviceSettings.bandSteering?.bandSteeringEnable ? 'Enabled' : 'Disabled'}`);
+  }
+  console.log('');
+
+  // 20. Test getGridKnownClients
+  const knownClients = await testMethod('getGridKnownClients', { page: 1, pageSize: 5 });
+  if (knownClients) {
+    console.log('   ✅ PASS: getGridKnownClients returned known clients insight:');
+    console.log(`      • Known clients recorded: ${knownClients.totalRows ?? 'N/A'}`);
   }
   console.log('');
 

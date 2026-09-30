@@ -130,7 +130,7 @@ export class MonitorOperations {
      */
     public async getDashboardOverview(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/dashboard/overview-diagram`);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/dashboard/overview`);
         const response = await this.request.get<OmadaApiResponse<unknown>>(path, undefined, customHeaders);
         return this.request.ensureSuccess(response);
     }

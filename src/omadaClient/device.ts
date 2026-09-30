@@ -173,7 +173,7 @@ export class DeviceOperations {
             throw new Error('An apMac must be provided.');
         }
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/aps/${encodeURIComponent(apMac)}`);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/eaps/${encodeURIComponent(apMac)}`);
         const response = await this.request.get<OmadaApiResponse<unknown>>(path, undefined, customHeaders);
         return this.request.ensureSuccess(response);
     }

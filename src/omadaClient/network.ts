@@ -62,7 +62,7 @@ export class NetworkOperations {
      */
     public async getLanNetworkList(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown[]> {
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/lan-networks`, 'v2');
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/setting/lan/networks`);
         return await this.request.fetchPaginated<unknown>(path, {}, customHeaders);
     }
 
@@ -82,7 +82,7 @@ export class NetworkOperations {
      */
     public async getWlanGroupList(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown[]> {
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/wireless-network/wlans`);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/setting/wlans`);
         const response = await this.request.get<OmadaApiResponse<unknown[]>>(path, undefined, customHeaders);
         return this.request.ensureSuccess(response);
     }
@@ -99,7 +99,7 @@ export class NetworkOperations {
         }
 
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/wireless-network/wlans/${encodeURIComponent(wlanId)}/ssids`);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/setting/wlans/${encodeURIComponent(wlanId)}/ssids`);
         return await this.request.fetchPaginated<unknown>(path, {}, customHeaders);
     }
 
@@ -420,7 +420,7 @@ export class NetworkOperations {
      */
     public async getLanNetworkListV2(page: number, pageSize: number, siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/lan-networks`, 'v2');
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/setting/lan/networks`);
         const response = await this.request.get<OmadaApiResponse<unknown>>(path, { page, pageSize }, customHeaders);
         return this.request.ensureSuccess(response);
     }
@@ -1202,7 +1202,7 @@ export class NetworkOperations {
      */
     public async listMdnsProfile(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
         const resolvedSiteId = this.site.resolveSiteId(siteId);
-        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/profiles/bonjour-service`);
+        const path = this.buildPath(`/sites/${encodeURIComponent(resolvedSiteId)}/setting/mdns`);
         const response = await this.request.get<OmadaApiResponse<unknown>>(path, undefined, customHeaders);
         return this.request.ensureSuccess(response);
     }

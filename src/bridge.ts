@@ -44,23 +44,14 @@ export function createBridgedOmadaClient(session: OmadaSessionProvider): {
     const { token, omadacId: activeOmadacId, cookieHeader } = await session.ensureLogin();
 
     if (config.url) {
-      if (config.url.startsWith("/openapi/")) {
-        // Rewrite OpenAPI path: /openapi/v1/:omadacId/sites/... -> /:omadacId/api/v2/sites/...
-        config.url = config.url.replace(/^\/openapi\/v[0-9]+\/[^/]+/, `/${activeOmadacId}/api/v2`);
-      } else if (!config.url.startsWith(`/${activeOmadacId}/api/v2`)) {
+      // Ensure URL uses the active session omadacId
+      if (!config.url.startsWith(`/${activeOmadacId}/`)) {
+        config.url = config.url.replace(/^\/[^/]+(?=\/api\/)/, `/${activeOmadacId}`);
+      }
+      if (!config.url.startsWith(`/${activeOmadacId}/api/`)) {
         const normalized = config.url.startsWith("/") ? config.url : `/${config.url}`;
         config.url = `/${activeOmadacId}/api/v2${normalized}`;
       }
-      // Rewrite overview-diagram to local overview endpoint
-      config.url = config.url.replace(/\/dashboard\/overview-diagram/, "/dashboard/overview");
-      // Map OpenAPI paths to Omada Fusion Controller local API paths
-      config.url = config.url
-        .replace(/\/logs\/events$/, "/events")
-        .replace(/\/logs\/alerts$/, "/alerts")
-        .replace(/\/sites\/([^/]+)\/aps(\/|$)/, "/sites/$1/eaps$2")
-        .replace(/\/sites\/([^/]+)\/lan-networks(\/|$)/, "/sites/$1/setting/lan/networks$2")
-        .replace(/\/sites\/([^/]+)\/wireless-network\/wlans(\/|$)/, "/sites/$1/setting/wlans$2")
-        .replace(/\/sites\/([^/]+)\/profiles\/bonjour-service(\/|$)/, "/sites/$1/setting/mdns$2");
     }
 
     config.headers = config.headers || {};

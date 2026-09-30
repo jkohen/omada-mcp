@@ -1276,6 +1276,14 @@ export class OmadaClient {
         return await this.siteOps.getSiteDetail(siteId, customHeaders);
     }
 
+    public async getSiteSettings(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
+        return await this.siteOps.getSiteSettings(siteId, customHeaders);
+    }
+
+    public async getSiteServiceSettings(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
+        return await this.siteOps.getSiteServiceSettings(siteId, customHeaders);
+    }
+
     public async getSiteUrl(siteId?: string, customHeaders?: CustomHeaders): Promise<unknown> {
         return await this.siteOps.getSiteUrl(siteId, customHeaders);
     }
@@ -1433,10 +1441,10 @@ export class OmadaClient {
     /**
      * Build a full Omada API path from a relative path.
      * @param relativePath - The relative path to append to the base API path
-     * @param version - The API version to use (default: 'v1')
+     * @param version - The API version to use (default: 'v2')
      */
-    private buildOmadaPath(relativePath: string, version = 'v1'): string {
+    private buildOmadaPath(relativePath: string, version = 'v2'): string {
         const normalized = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
-        return `/openapi/${version}/${encodeURIComponent(this.omadacId)}${normalized}`;
+        return `/${encodeURIComponent(this.omadacId)}/api/${version}${normalized}`;
     }
 }
