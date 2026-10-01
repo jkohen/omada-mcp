@@ -10,7 +10,7 @@ This document outlines the architecture, operational constraints, and workflow r
 * **Role**: Model Context Protocol (MCP) gateway server implementing StreamableHTTP and SSE transports, secured with RFC-compliant OAuth 2.0 authentication.
 * **Target Hardware**: TP-Link Omada Fusion 2.5G Gateway running embedded Omada Controller 6.x on local IP `https://192.168.1.1`.
 * **Deployment Host**: Raspberry Pi 5 accessible over Tailscale at `https://<your-node>.<your-tailnet>.ts.net`.
-* **Tools**: Exposes 320+ tools bridged from `tplink-omada-mcp` with automatic dynamic pagination, active client filtering, and standardized MCP risk annotations.
+* **Tools**: Exposes 317 tools directly targeting the Omada Controller 6.x native REST API (`/api/v2/...`), with automatic dynamic pagination, active client filtering, and standardized MCP risk annotations. Eliminates artificial Cloud OpenAPI URL rewrites to provide 100% endpoint fidelity with the hardware gateway.
 
 ---
 
