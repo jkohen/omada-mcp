@@ -104,6 +104,16 @@ async function verifyMethods() {
   }
   console.log('');
 
+  // 5b. Test listDevices with siteId: 'Default' (LLM alias test)
+  const defaultDevices = await testMethod('listDevices', { siteId: 'Default' });
+  assert.ok(Array.isArray(defaultDevices) && defaultDevices.length > 0, 'Expected listDevices with siteId: Default to resolve');
+  console.log(`   ✅ PASS: listDevices with siteId: "Default" resolved to ${defaultDevices.length} device(s)\n`);
+
+  // 5c. Test getControllerStatus
+  const ctrlStatus = await testMethod('getControllerStatus');
+  assert.ok(ctrlStatus && typeof ctrlStatus === 'object', 'Expected getControllerStatus to return status object');
+  console.log(`   ✅ PASS: getControllerStatus returned: Gateway=${ctrlStatus.connectedGatewayNum}/${ctrlStatus.totalGatewayNum}, APs=${ctrlStatus.connectedApNum}/${ctrlStatus.totalApNum}, Clients=${ctrlStatus.totalClientNum}\n`);
+
   // 6. Test listClients
   const clients = await testMethod('listClients');
   assert.ok(Array.isArray(clients), 'Expected listClients to return an array');

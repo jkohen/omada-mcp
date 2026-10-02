@@ -25,7 +25,13 @@ export class SiteOperations {
      */
     public resolveSiteId(siteId?: string): string {
         if (siteId) {
-            return siteId;
+            const trimmed = siteId.trim();
+            if (trimmed.toLowerCase() === 'default' || trimmed.toLowerCase() === 'current' || trimmed.toLowerCase() === 'primary') {
+                if (this.defaultSiteId) {
+                    return this.defaultSiteId;
+                }
+            }
+            return trimmed;
         }
 
         if (this.defaultSiteId) {

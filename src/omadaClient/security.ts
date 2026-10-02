@@ -84,7 +84,7 @@ export class SecurityOperations {
      * OperationId: getControllerStatus
      */
     public async getControllerStatus(customHeaders?: CustomHeaders): Promise<unknown> {
-        const path = this.buildPath('/system/setting/controller-status');
+        const path = this.buildPath('/dashboard/overview');
         const response = await this.request.get<OmadaApiResponse<unknown>>(path, undefined, customHeaders);
         return this.request.ensureSuccess(response);
     }

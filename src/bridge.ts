@@ -104,16 +104,33 @@ export function createBridgedOmadaClient(session: OmadaSessionProvider): {
   // Intercept responses to handle session invalidation on auth failure
   http.interceptors.response.use(
     (response) => {
+      const contentType = String(response.headers?.["content-type"] || "");
+      const isHtml =
+        contentType.includes("text/html") ||
+        (typeof response.data === "string" && response.data.trimStart().startsWith("<!DOCTYPE HTML>"));
+
+      if (isHtml) {
+        session.invalidate();
+        return Promise.reject(new Error("Omada session expired (HTML login redirect received)"));
+      }
+
       if (response.data && typeof response.data === "object") {
         const data = response.data as { errorCode?: number };
-        if (data.errorCode === -44106 || data.errorCode === -44111 || data.errorCode === -44112) {
+        if (
+          data.errorCode === -44106 ||
+          data.errorCode === -44111 ||
+          data.errorCode === -44112 ||
+          data.errorCode === -44113 ||
+          data.errorCode === -44114 ||
+          data.errorCode === -44116
+        ) {
           session.invalidate();
         }
       }
       return response;
     },
     (error) => {
-      if (error.response?.status === 401 || error.response?.status === 403) {
+      if (error.response?.status === 401 || error.response?.status === 403 || error.response?.status === 500) {
         session.invalidate();
       }
       return Promise.reject(error);

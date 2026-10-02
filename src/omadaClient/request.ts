@@ -111,14 +111,22 @@ export class RequestHandler {
                 });
             }
 
-            if (!retry || !axios.isAxiosError(error)) {
+            if (!retry) {
                 throw error;
             }
 
-            const status = error.response?.status;
-            const errorCode = (error.response?.data as { errorCode?: number } | undefined)?.errorCode;
+            const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+            const errorCode = (axios.isAxiosError(error) ? error.response?.data as { errorCode?: number } | undefined : undefined)?.errorCode;
+            const isSessionExpired = error instanceof Error && (error.message.includes('session expired') || error.message.includes('HTML login redirect'));
 
-            if (status === 401 || status === 403 || this.isAuthErrorCode(errorCode)) {
+            if (status === 401 || status === 403 || this.isAuthErrorCode(errorCode) || isSessionExpired) {
+                logger.warn('Omada session invalid in request catch block, retrying with fresh session', {
+                    method,
+                    url,
+                    status,
+                    errorCode,
+                    message: error instanceof Error ? error.message : String(error),
+                });
                 this.auth.clearToken();
                 return this.request<T>(config, false, customHeaders);
             }
@@ -170,12 +178,20 @@ export class RequestHandler {
      * @throws {Error} If the response contains an error code
      */
     public ensureSuccess<T>(response: OmadaApiResponse<T>): T {
+        if (!response || typeof response !== 'object') {
+            throw new Error('Invalid response received from Omada controller');
+        }
+
+        if (Array.isArray(response)) {
+            return response as unknown as T;
+        }
+
         if (response.errorCode !== 0) {
             logger.error('Omada API error', {
                 errorCode: response.errorCode,
                 message: response.msg,
             });
-            throw new Error(response.msg ?? 'Omada API request failed');
+            throw new Error(response.msg || `Omada API request failed with error code ${response.errorCode}`);
         }
 
         return (response.result ?? ({} as T)) as T;

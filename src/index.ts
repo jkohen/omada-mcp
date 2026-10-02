@@ -32,6 +32,7 @@ class OmadaFusionSession implements OmadaSessionProvider {
   private omadacId?: string;
   private cookieHeader?: string;
   private expiresAt: number = 0;
+  private loginPromise?: Promise<{ token: string; omadacId: string; cookieHeader: string }>;
 
   constructor() {
     this.baseUrl = process.env.OMADA_URL || "https://192.168.1.1";
@@ -45,48 +46,61 @@ class OmadaFusionSession implements OmadaSessionProvider {
       return { token: this.token, omadacId: this.omadacId!, cookieHeader: this.cookieHeader };
     }
 
-    const res = await fetch(`${this.baseUrl}/api/v2/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: this.username, password: this.password }),
-    });
-
-    const setCookieHeader = res.headers.get("set-cookie");
-    let rawCookies: string[] = [];
-    if (typeof (res.headers as any).getSetCookie === "function") {
-      rawCookies = (res.headers as any).getSetCookie();
-    } else if (setCookieHeader) {
-      rawCookies = [setCookieHeader];
+    if (this.loginPromise) {
+      return await this.loginPromise;
     }
 
-    const parsedCookies: string[] = [];
-    for (const c of rawCookies) {
-      if (c && typeof c === "string") {
-        const parts = c.split(";");
-        if (parts[0]) {
-          parsedCookies.push(parts[0]);
+    this.loginPromise = (async () => {
+      try {
+        const res = await fetch(`${this.baseUrl}/api/v2/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: this.username, password: this.password }),
+        });
+
+        const setCookieHeader = res.headers.get("set-cookie");
+        let rawCookies: string[] = [];
+        if (typeof (res.headers as any).getSetCookie === "function") {
+          rawCookies = (res.headers as any).getSetCookie();
+        } else if (setCookieHeader) {
+          rawCookies = [setCookieHeader];
         }
+
+        const parsedCookies: string[] = [];
+        for (const c of rawCookies) {
+          if (c && typeof c === "string") {
+            const parts = c.split(";");
+            if (parts[0]) {
+              parsedCookies.push(parts[0]);
+            }
+          }
+        }
+        this.cookieHeader = parsedCookies.join("; ");
+
+        const data = await res.json() as any;
+        if (data.errorCode !== 0 || !data.result?.token) {
+          throw new Error(`Omada Fusion Web UI login failed: ${data.msg || JSON.stringify(data)}`);
+        }
+
+        this.token = String(data.result.token);
+        this.omadacId = String(data.result.omadacId || "your_omadac_id");
+        this.expiresAt = Date.now() + 30 * 60 * 1000;
+
+        console.log(`[MCP Gateway] Omada Fusion Web UI login successful! Token: ${this.token.substring(0, 8)}...`);
+        return { token: this.token, omadacId: this.omadacId, cookieHeader: this.cookieHeader };
+      } finally {
+        this.loginPromise = undefined;
       }
-    }
-    this.cookieHeader = parsedCookies.join("; ");
+    })();
 
-    const data = await res.json() as any;
-    if (data.errorCode !== 0 || !data.result?.token) {
-      throw new Error(`Omada Fusion Web UI login failed: ${data.msg || JSON.stringify(data)}`);
-    }
-
-    this.token = String(data.result.token);
-    this.omadacId = String(data.result.omadacId || "your_omadac_id");
-    this.expiresAt = Date.now() + 30 * 60 * 1000;
-
-    console.log(`[MCP Gateway] Omada Fusion Web UI login successful! Token: ${this.token.substring(0, 8)}...`);
-    return { token: this.token, omadacId: this.omadacId, cookieHeader: this.cookieHeader };
+    return await this.loginPromise;
   }
 
   invalidate(): void {
     this.token = undefined;
     this.cookieHeader = undefined;
     this.expiresAt = 0;
+    this.loginPromise = undefined;
   }
 
   getSiteId(): string {

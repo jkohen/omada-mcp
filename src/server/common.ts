@@ -107,12 +107,16 @@ export function wrapToolHandler<Args extends z.ZodRawShape>(
             logger.info('Tool completed', { tool: name, sessionId });
             return result;
         } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
             logger.error('Tool failed', {
                 tool: name,
                 sessionId,
-                error: error instanceof Error ? error.message : String(error),
+                error: errorMsg,
             });
-            throw error;
+            return {
+                isError: true,
+                content: [{ type: 'text', text: errorMsg }],
+            };
         }
     };
 }
