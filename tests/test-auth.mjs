@@ -136,15 +136,17 @@ async function runAuthTests() {
   await clientRefreshed.close();
   console.log('   ✅ PASS: Refresh token exchange succeeded and refreshed JWT allows MCP access');
 
-  // 7. Invalid Refresh Token MUST be rejected
+  // 7. Invalid Refresh Token MUST be rejected with 400 invalid_grant
   console.log('7. Testing invalid refresh_token rejection...');
   const badRefreshRes = await fetch(`${baseUrl}/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `grant_type=refresh_token&refresh_token=invalid_refresh_token&client_id=${clientId}&client_secret=${staticToken}`
   });
-  assert.strictEqual(badRefreshRes.status, 401, `Expected 401 for invalid refresh token, got ${badRefreshRes.status}`);
-  console.log('   ✅ PASS: Invalid refresh token rejected with 401');
+  assert.strictEqual(badRefreshRes.status, 400, `Expected 400 for invalid refresh token, got ${badRefreshRes.status}`);
+  const badRefreshData = await badRefreshRes.json();
+  assert.strictEqual(badRefreshData.error, 'invalid_grant');
+  console.log('   ✅ PASS: Invalid refresh token rejected with 400 invalid_grant');
 
   console.log('\n=== All Authentication Tests Passed Successfully! ===');
 }
