@@ -239,28 +239,61 @@ app.get("/oauth/authorize", (req: Request, res: Response) => {
 
 // --- 4. Standard OAuth 2.0 / OIDC Token Endpoint ---
 app.post("/oauth/token", (req: Request, res: Response) => {
-  const { grant_type, client_id, client_secret, code } = req.body || {};
+  const { grant_type, client_id, client_secret, code, refresh_token } = req.body || {};
 
   if (client_secret && client_secret !== OAUTH_CLIENT_SECRET) {
     res.status(401).json({ error: "invalid_client", error_description: "Client secret is invalid." });
     return;
   }
 
-  if (grant_type === "authorization_code" && code) {
+  let clientId = client_id || OAUTH_CLIENT_ID;
+
+  if (grant_type === "authorization_code") {
+    if (!code) {
+      res.status(400).json({ error: "invalid_request", error_description: "Missing code parameter." });
+      return;
+    }
     const authCodeData = authCodes.get(code);
     if (!authCodeData || authCodeData.expiresAt < Date.now()) {
       res.status(400).json({ error: "invalid_grant", error_description: "Authorization code invalid or expired." });
       return;
     }
+    clientId = authCodeData.clientId || clientId;
     authCodes.delete(code);
+  } else if (grant_type === "refresh_token") {
+    const rawRefreshToken = (refresh_token || req.query.refresh_token) as string | undefined;
+    if (!rawRefreshToken) {
+      res.status(400).json({ error: "invalid_request", error_description: "Missing refresh_token parameter." });
+      return;
+    }
+    try {
+      const decoded = jwt.verify(rawRefreshToken, JWT_SECRET) as any;
+      if (decoded.token_type !== "refresh_token") {
+        res.status(400).json({ error: "invalid_grant", error_description: "Provided token is not a refresh token." });
+        return;
+      }
+      clientId = decoded.sub || clientId;
+    } catch {
+      res.status(400).json({ error: "invalid_grant", error_description: "Refresh token is invalid or expired." });
+      return;
+    }
+  } else if (grant_type !== "client_credentials" && grant_type) {
+    res.status(400).json({ error: "unsupported_grant_type", error_description: `Grant type '${grant_type}' is not supported.` });
+    return;
   }
 
-  const clientId = client_id || OAUTH_CLIENT_ID;
-
+  // 30-day access token lifetime
   const token = jwt.sign(
-    { sub: clientId, scope: "openid profile omada:read" },
+    { sub: clientId, scope: "openid profile omada:read", token_type: "access_token" },
     JWT_SECRET,
-    { expiresIn: "24h" }
+    { expiresIn: "30d" }
+  );
+
+  // 365-day refresh token lifetime
+  const newRefreshToken = jwt.sign(
+    { sub: clientId, token_type: "refresh_token" },
+    JWT_SECRET,
+    { expiresIn: "365d" }
   );
 
   const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
@@ -270,16 +303,17 @@ app.post("/oauth/token", (req: Request, res: Response) => {
   const idToken = jwt.sign(
     { sub: clientId, iss: baseUrl, aud: clientId },
     JWT_SECRET,
-    { expiresIn: "24h" }
+    { expiresIn: "30d" }
   );
 
-  console.log(`[MCP Gateway] Standard OAuth 2.0 / OIDC Token issued for client ${clientId}`);
+  console.log(`[MCP Gateway] OAuth 2.0 Token issued for client ${clientId} (grant_type: ${grant_type || "default"})`);
 
   res.json({
     access_token: token,
+    refresh_token: newRefreshToken,
     id_token: idToken,
     token_type: "Bearer",
-    expires_in: 86400,
+    expires_in: 30 * 24 * 3600, // 30 days in seconds (2,592,000)
     scope: "openid profile omada:read"
   });
 });
@@ -297,7 +331,7 @@ const getDiscoveryMetadata = (req: Request) => {
     registration_endpoint: `${baseUrl}/oauth/register`,
     jwks_uri: `${baseUrl}/.well-known/jwks.json`,
     response_types_supported: ["code"],
-    grant_types_supported: ["authorization_code", "client_credentials"],
+    grant_types_supported: ["authorization_code", "client_credentials", "refresh_token"],
     token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic", "none"],
     code_challenge_methods_supported: ["S256", "plain"],
     scopes_supported: ["openid", "profile", "email", "omada:read"],
@@ -324,7 +358,7 @@ const getProtectedResourceMetadata = (req: Request) => {
     authorization_endpoint: `${baseUrl}/oauth/authorize`,
     token_endpoint: `${baseUrl}/oauth/token`,
     registration_endpoint: `${baseUrl}/oauth/register`,
-    grant_types_supported: ["authorization_code", "client_credentials"],
+    grant_types_supported: ["authorization_code", "client_credentials", "refresh_token"],
     scopes_supported: ["openid", "profile", "email", "omada:read"],
     bearer_methods_supported: ["header"]
   };
@@ -341,7 +375,8 @@ app.get([
 
 app.get([
   "/.well-known/oauth-protected-resource",
-  "/.well-known/oauth-protected-resource/mcp"
+  "/.well-known/oauth-protected-resource/mcp",
+  "/.well-known/oauth-protected-resource/sse"
 ], (req: Request, res: Response) => {
   res.json(getProtectedResourceMetadata(req));
 });
@@ -360,6 +395,18 @@ const handleStreamableHttpRequest = async (req: Request, res: Response) => {
   }
 
   let sessionState: StreamSessionState | undefined = headerSessionId ? activeSessions.get(headerSessionId) : undefined;
+
+  // If client provided a session ID that is no longer active, return 404 per Streamable HTTP spec
+  // so the client knows its session has expired and can cleanly re-initialize.
+  if (headerSessionId && !sessionState) {
+    console.log(`[MCP Gateway] Client requested expired or unknown session ID: ${headerSessionId}, returning 404`);
+    res.status(404).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Session not found" },
+      id: null
+    });
+    return;
+  }
 
   if (!sessionState) {
     const sessionId = headerSessionId || randomUUID();

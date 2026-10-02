@@ -79,6 +79,9 @@ async function runAuthTests() {
   assert.strictEqual(tokenRes.status, 200, `Expected 200 from /oauth/token, got ${tokenRes.status}`);
   const tokenData = await tokenRes.json();
   assert.ok(tokenData.access_token, 'Access token missing in response');
+  assert.strictEqual(tokenData.expires_in, 2592000, `Expected 30-day expires_in (2592000), got ${tokenData.expires_in}`);
+  assert.ok(tokenData.refresh_token, 'Refresh token missing in response');
+  console.log(`   ✅ PASS: Token response includes 30-day expires_in (${tokenData.expires_in}s) and refresh_token`);
 
   const transportJwt = new StreamableHTTPClientTransport(
     new URL(`${baseUrl}/mcp`),
@@ -99,6 +102,49 @@ async function runAuthTests() {
   assert.ok(toolsJwt.tools?.length > 0, 'Tools list should not be empty');
   await clientJwt.close();
   console.log(`   ✅ PASS: Dynamic OAuth JWT accepted (${toolsJwt.tools.length} tools available)`);
+
+  // 6. Refresh Token flow MUST issue new tokens and allow MCP access
+  console.log('6. Testing OAuth 2.0 Refresh Token flow...');
+  const refreshRes = await fetch(`${baseUrl}/oauth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=refresh_token&refresh_token=${tokenData.refresh_token}&client_id=${clientId}&client_secret=${staticToken}`
+  });
+  assert.strictEqual(refreshRes.status, 200, `Expected 200 from refresh_token grant, got ${refreshRes.status}`);
+  const refreshData = await refreshRes.json();
+  assert.ok(refreshData.access_token, 'Refreshed access token missing');
+  assert.ok(refreshData.refresh_token, 'Refreshed refresh token missing');
+  assert.strictEqual(refreshData.expires_in, 2592000, `Expected 2592000, got ${refreshData.expires_in}`);
+
+  const transportRefreshed = new StreamableHTTPClientTransport(
+    new URL(`${baseUrl}/mcp`),
+    {
+      requestInit: {
+        headers: {
+          'Authorization': `Bearer ${refreshData.access_token}`
+        }
+      }
+    }
+  );
+  const clientRefreshed = new Client(
+    { name: 'test-auth-refreshed', version: '1.0.0' },
+    { capabilities: {} }
+  );
+  await clientRefreshed.connect(transportRefreshed);
+  const toolsRefreshed = await clientRefreshed.listTools();
+  assert.ok(toolsRefreshed.tools?.length > 0, 'Refreshed tools list should not be empty');
+  await clientRefreshed.close();
+  console.log('   ✅ PASS: Refresh token exchange succeeded and refreshed JWT allows MCP access');
+
+  // 7. Invalid Refresh Token MUST be rejected
+  console.log('7. Testing invalid refresh_token rejection...');
+  const badRefreshRes = await fetch(`${baseUrl}/oauth/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=refresh_token&refresh_token=invalid_refresh_token&client_id=${clientId}&client_secret=${staticToken}`
+  });
+  assert.strictEqual(badRefreshRes.status, 401, `Expected 401 for invalid refresh token, got ${badRefreshRes.status}`);
+  console.log('   ✅ PASS: Invalid refresh token rejected with 401');
 
   console.log('\n=== All Authentication Tests Passed Successfully! ===');
 }
