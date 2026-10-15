@@ -1,4 +1,4 @@
-# Omada MCP OAuth 2.0 Gateway for Raspberry Pi 5
+# Omada Fusion MCP Gateway with OAuth
 
 A secure **Remote MCP (Model Context Protocol) OAuth 2.0 Gateway** designed to connect **Google Gemini Spark**, **Google Antigravity**, and other Remote MCP clients to a local **TP-Link Omada Fusion 2.5G Gateway** (or standalone Omada Controller).
 
@@ -51,11 +51,10 @@ A secure **Remote MCP (Model Context Protocol) OAuth 2.0 Gateway** designed to c
 ### 1. Prerequisites
 - Raspberry Pi 5 (or any Linux/macOS/Windows server).
 - Node.js **v20.x+** or **v22.x+** installed.
-- Tailscale installed with Tailscale Funnel enabled.
 
 ### 2. Installation
 
-Clone this repository on your Raspberry Pi:
+Clone this repository in your host:
 
 ```bash
 git clone https://github.com/jkohen/omada-mcp.git
@@ -103,7 +102,7 @@ npm start
 
 ### 5. Enable Tailscale Funnel
 
-Expose port 3000 to the public internet securely using Tailscale Funnel:
+Expose port 3000 to the public internet securely. For instance, if using Tailscale Funnel:
 
 ```bash
 sudo tailscale funnel --bg 3000
@@ -159,7 +158,7 @@ Add the gateway to your MCP server configuration:
 
 ## ⚙️ Running as a Systemd Service
 
-To keep the gateway running automatically on Pi boot:
+To keep the gateway running automatically on reboot:
 
 ```bash
 sudo cp omada-mcp-gateway.service /etc/systemd/system/
