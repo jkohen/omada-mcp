@@ -8,8 +8,8 @@ This document outlines the architecture, operational constraints, and workflow r
 
 * **Repository**: [`jkohen/omada-mcp`](https://github.com/jkohen/omada-mcp) (TypeScript, Node.js, Express, MCP SDK).
 * **Role**: Model Context Protocol (MCP) gateway server implementing StreamableHTTP and SSE transports, secured with RFC-compliant OAuth 2.0 authentication.
-* **Target Hardware**: TP-Link Omada Fusion 2.5G Gateway running embedded Omada Controller 6.x on local IP `https://192.168.1.1`.
-* **Deployment Host**: Raspberry Pi 5 accessible over Tailscale at `https://<your-node>.<your-tailnet>.ts.net`.
+* **Target Hardware**: TP-Link Omada Gateway (e.g. Fusion 2.5G) running embedded Omada Controller 6.x on local IP (e.g. `https://192.168.1.1`).
+* **Deployment Host**: Raspberry Pi 5 accessible over Tailscale at `https://<your-device>.<your-tailnet>.ts.net`.
 * **Tools**: Exposes 317 tools directly targeting the Omada Controller 6.x native REST API (`/api/v2/...`), with automatic dynamic pagination, active client filtering, and standardized MCP risk annotations. Eliminates artificial Cloud OpenAPI URL rewrites to provide 100% endpoint fidelity with the hardware gateway.
 
 ---
@@ -23,7 +23,7 @@ This document outlines the architecture, operational constraints, and workflow r
 
 ```powershell
 # Set remote gateway target and run method verification locally
-[System.Environment]::SetEnvironmentVariable('GATEWAY_URL', 'https://<your-node>.<your-tailnet>.ts.net')
+[System.Environment]::SetEnvironmentVariable('GATEWAY_URL', 'https://<your-device>.<your-tailnet>.ts.net')
 node tests/test-verify-methods.mjs
 ```
 
@@ -70,7 +70,7 @@ All 320+ tools are dynamically annotated in `src/server/common.ts` via `inferToo
   * `true`: All read-only methods and absolute state-setters (`set*`, `enable*`, `disable*`, `block*`, `unblock*`).
   * `false`: Actions that repeat side-effects on every invocation (`reboot*`, `create*`, `triggerSpeedTest`, `upgrade*`).
 * **`openWorldHint`**:
-  * `false` (default for ~98% of tools): All tools communicating strictly with the local gateway (`192.168.1.1`).
+  * `false` (default for ~98% of tools): All tools communicating strictly with the local gateway (e.g. `192.168.1.1`).
   * `true`: Only tools connecting to external internet/cloud endpoints (`speedtest`, `cloud`, `firmwareupgrade`, `autocheckupgrade`, `external`, `ddns`).
 
 Tool-specific overrides can be declared directly in the individual tool registration file when an exception is needed.

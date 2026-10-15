@@ -184,7 +184,7 @@ export function inferToolAnnotations(name: string, description?: string): ToolAn
     }
 
     // 4. openWorldHint:
-    // Closed domain (local 192.168.1.1) for almost everything.
+    // Closed domain (local Omada Gateway) for almost everything.
     // openWorldHint = true only if it accesses external internet / TP-Link cloud services.
     const isOpenWorld =
         lowerName.includes('speedtest') ||

@@ -14,7 +14,7 @@ Environment=NODE_ENV=production
 # Security Hardening: Network Sandboxing
 # Strictly block all outbound internet traffic.
 # Only allow connections to localhost (127.0.0.1 for Tailscale Funnel)
-# and the local Omada Fusion 2.5G Gateway (192.168.1.1).
+# and the local Omada Gateway (e.g. 192.168.1.1).
 IPAddressDeny=any
 IPAddressAllow=localhost 127.0.0.1 ::1 192.168.1.1 192.168.1.0/24
 

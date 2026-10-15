@@ -10,13 +10,13 @@ import { createBridgedOmadaClient, type OmadaSessionProvider } from "./bridge.js
 
 dotenv.config();
 
-// Ignore self-signed TLS certificates for local Omada Fusion Gateway (192.168.1.1)
+// Ignore self-signed TLS certificates for local Omada Gateway
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 const HOST = process.env.HOST || "127.0.0.1";
 const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID || "omada_gemini_client";
-const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || "test_oauth_client_secret";
+const OAUTH_CLIENT_SECRET = process.env.OAUTH_CLIENT_SECRET || "";
 const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret_change_in_production";
 
 const APP_ID = "omada-mcp";
@@ -35,13 +35,17 @@ class OmadaFusionSession implements OmadaSessionProvider {
   private loginPromise?: Promise<{ token: string; omadacId: string; cookieHeader: string }>;
 
   constructor() {
-    this.baseUrl = process.env.OMADA_URL || "https://192.168.1.1";
-    this.username = process.env.OMADA_USERNAME || "admin";
-    this.password = process.env.OMADA_PASSWORD || "your_omada_password";
+    this.baseUrl = (process.env.OMADA_URL || "https://192.168.1.1").replace(/\/$/, "");
+    this.username = process.env.OMADA_USERNAME || "";
+    this.password = process.env.OMADA_PASSWORD || "";
     this.siteId = process.env.OMADA_SITE || "Default";
   }
 
   async ensureLogin(): Promise<{ token: string; omadacId: string; cookieHeader: string }> {
+    if (!this.username || !this.password) {
+      throw new Error("Omada credentials not configured. Please set OMADA_USERNAME and OMADA_PASSWORD in your environment.");
+    }
+
     if (this.token && this.cookieHeader && Date.now() < this.expiresAt) {
       return { token: this.token, omadacId: this.omadacId!, cookieHeader: this.cookieHeader };
     }
@@ -83,7 +87,7 @@ class OmadaFusionSession implements OmadaSessionProvider {
         }
 
         this.token = String(data.result.token);
-        this.omadacId = String(data.result.omadacId || "your_omadac_id");
+        this.omadacId = String(data.result.omadacId || process.env.OMADA_OMADAC_ID || "");
         this.expiresAt = Date.now() + 30 * 60 * 1000;
 
         console.log(`[MCP Gateway] Omada Fusion Web UI login successful! Token: ${this.token.substring(0, 8)}...`);
@@ -149,6 +153,12 @@ interface StreamSessionState {
 
 const activeSessions = new Map<string, StreamSessionState>();
 
+const getBaseUrl = (req: Request): string => {
+  const host = req.headers.host || `${HOST}:${PORT}`;
+  const protocol = req.headers["x-forwarded-proto"] || (req.secure ? "https" : "http");
+  return `${protocol}://${host}`;
+};
+
 // --- 1. Bearer Token Verification Middleware ---
 const authenticateBearer = (req: Request, res: Response, next: NextFunction) => {
   if (req.method === "HEAD" || req.method === "OPTIONS") {
@@ -168,9 +178,7 @@ const authenticateBearer = (req: Request, res: Response, next: NextFunction) => 
     }
   }
 
-  const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
-  const protocol = req.headers["x-forwarded-proto"] || "https";
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
 
   console.log(`[AUTH DEBUG] ${req.method} ${req.originalUrl} from ${req.ip} | Token: ${token ? 'Found' : 'MISSING'} | AuthHeader: ${req.headers.authorization ? 'Present' : 'None'}`);
 
@@ -189,7 +197,7 @@ const authenticateBearer = (req: Request, res: Response, next: NextFunction) => 
   }
 
   // Allow static OAuth token / client secret directly
-  if (token === OAUTH_CLIENT_SECRET || (process.env.STATIC_OAUTH_TOKEN && token === process.env.STATIC_OAUTH_TOKEN)) {
+  if ((OAUTH_CLIENT_SECRET && token === OAUTH_CLIENT_SECRET) || (process.env.STATIC_OAUTH_TOKEN && token === process.env.STATIC_OAUTH_TOKEN)) {
     (req as any).user = { sub: OAUTH_CLIENT_ID, scope: "openid profile omada:read" };
     next();
     return;
@@ -200,9 +208,7 @@ const authenticateBearer = (req: Request, res: Response, next: NextFunction) => 
     (req as any).user = decoded;
     next();
   } catch (err) {
-    const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
-    const protocol = req.headers["x-forwarded-proto"] || "https";
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = getBaseUrl(req);
 
     res.setHeader("WWW-Authenticate", `Bearer error="invalid_token", token_uri="${baseUrl}/oauth/token"`);
     res.status(401).json({
@@ -310,9 +316,7 @@ app.post("/oauth/token", (req: Request, res: Response) => {
     { expiresIn: "365d" }
   );
 
-  const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
-  const protocol = req.headers["x-forwarded-proto"] || "https";
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
 
   const idToken = jwt.sign(
     { sub: clientId, iss: baseUrl, aud: clientId },
@@ -334,9 +338,7 @@ app.post("/oauth/token", (req: Request, res: Response) => {
 
 // Metadata Documents
 const getDiscoveryMetadata = (req: Request) => {
-  const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
-  const protocol = req.headers["x-forwarded-proto"] || "https";
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
 
   return {
     issuer: baseUrl,
@@ -362,9 +364,7 @@ const getDiscoveryMetadata = (req: Request) => {
 };
 
 const getProtectedResourceMetadata = (req: Request) => {
-  const host = req.headers.host || "<your-node>.<your-tailnet>.ts.net";
-  const protocol = req.headers["x-forwarded-proto"] || "https";
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = getBaseUrl(req);
 
   return {
     resource: `${baseUrl}/mcp`,
@@ -521,6 +521,8 @@ app.listen(PORT, HOST, () => {
   console.log(` Authorize URL:       http://${HOST}:${PORT}/oauth/authorize`);
   console.log(` Token URL:           http://${HOST}:${PORT}/oauth/token`);
   console.log(` StreamableHTTP:      http://${HOST}:${PORT}/mcp`);
-  console.log(` Public Funnel URL:   https://<your-node>.<your-tailnet>.ts.net/mcp`);
+  if (process.env.PUBLIC_URL) {
+    console.log(` Public URL:          ${process.env.PUBLIC_URL}/mcp`);
+  }
   console.log(`=======================================================`);
 });

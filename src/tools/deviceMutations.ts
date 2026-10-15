@@ -13,7 +13,7 @@ export function registerDeviceMutationTools(server: McpServer, client: OmadaClie
                 '[Destructive] Reboot an Omada hardware device (Access Point, Switch, or Gateway). Causes temporary network disruption during restart.',
             inputSchema: siteInputSchema
                 .extend({
-                    deviceMac: deviceMacSchema.describe('MAC address of the device to reboot (e.g. 00-11-22-33-44-55)'),
+                    deviceMac: deviceMacSchema.describe('MAC address of the device to reboot (e.g. "AA-BB-CC-DD-EE-FF")'),
                 })
                 .shape,
         },

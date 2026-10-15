@@ -4,7 +4,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 
 async function verifyMethods() {
   const baseUrl = process.env.GATEWAY_URL || 'http://127.0.0.1:3000';
-  const clientId = process.env.OAUTH_CLIENT_ID || 'omada_gemini_client';
+  const clientId = process.env.OAUTH_CLIENT_ID || 'omada_test_client';
   const clientSecret = process.env.OAUTH_CLIENT_SECRET || 'test_oauth_client_secret';
 
   console.log('=== Omada MCP Method Verification ===\n');

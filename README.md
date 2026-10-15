@@ -12,7 +12,7 @@ A secure **Remote MCP (Model Context Protocol) OAuth 2.0 Gateway** designed to c
                  │ 1. Auto-Discovers RFC 8414 & RFC 9470 Metadata
                  │ 2. Connects via HTTPS (Tailscale Funnel)
                  ▼
-    https://<rpi-name>.<your-tailnet>.ts.net/mcp
+    https://<your-node>.<your-tailnet>.ts.net/mcp
                  │
                  ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -32,7 +32,7 @@ A secure **Remote MCP (Model Context Protocol) OAuth 2.0 Gateway** designed to c
 │  OmadaFusionSession (POST /api/v2/login)                    │
 │       │                                                     │
 │       ▼ HTTPS (Local LAN)                                   │
-│  TP-Link Omada Fusion 2.5G Gateway (192.168.1.1)          │
+│  TP-Link Omada Gateway (e.g. 192.168.1.1)                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -83,7 +83,7 @@ OAUTH_CLIENT_ID=omada_gemini_client
 OAUTH_CLIENT_SECRET=your_secure_client_secret_here
 JWT_SECRET=your_secure_jwt_signing_secret_here
 
-# TP-Link Omada Fusion 2.5G Gateway Credentials (Local Web UI Login)
+# TP-Link Omada Gateway Credentials (Local Web UI Login)
 OMADA_URL=https://192.168.1.1
 OMADA_USERNAME=admin
 OMADA_PASSWORD=your_omada_user_password
@@ -112,7 +112,7 @@ sudo tailscale funnel --bg 3000
 Verify that your public endpoint is reachable:
 
 ```bash
-curl https://<your-pi-name>.<your-tailnet>.ts.net/health
+curl https://<your-node>.<your-tailnet>.ts.net/health
 ```
 
 ---
@@ -137,7 +137,7 @@ npm run test:methods      # Live Omada controller method verification (sites, de
 
 ### Gemini Spark Setup
 1. In Gemini's custom MCP configuration screen, enter:
-   - **Server URL**: `https://<your-pi-name>.<your-tailnet>.ts.net/mcp`
+   - **Server URL**: `https://<your-node>.<your-tailnet>.ts.net/mcp`
    - **Client ID**: `omada_gemini_client` (or your configured `OAUTH_CLIENT_ID`)
    - **Client Secret**: `your_secure_client_secret_here` (or your configured `OAUTH_CLIENT_SECRET`)
 2. Gemini will automatically complete the OAuth 2.0 handshake using discovery endpoints.
@@ -149,7 +149,7 @@ Add the gateway to your MCP server configuration:
 {
   "mcpServers": {
     "omada-mcp": {
-      "serverUrl": "https://<your-pi-name>.<your-tailnet>.ts.net/mcp?access_token=<your_oauth_secret_or_token>"
+      "serverUrl": "https://<your-node>.<your-tailnet>.ts.net/mcp?access_token=<your_oauth_secret_or_token>"
     }
   }
 }

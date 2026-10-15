@@ -12,8 +12,8 @@ export function createBridgedOmadaClient(session: OmadaSessionProvider): {
   client: OmadaClient;
   activeCategories: Map<ToolCategory, Set<ToolPermission>>;
 } {
-  const baseUrl = process.env.OMADA_URL || "https://192.168.1.1";
-  const omadacId = process.env.OMADA_OMADAC_ID || "your_omadac_id";
+  const baseUrl = (process.env.OMADA_URL || "https://192.168.1.1").replace(/\/$/, "");
+  const omadacId = process.env.OMADA_OMADAC_ID || "";
   const siteId = process.env.OMADA_SITE || "Default";
 
   const client = new OmadaClient({

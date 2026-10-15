@@ -3,7 +3,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 const baseUrl = process.env.GATEWAY_URL || 'http://127.0.0.1:3000';
-const clientId = process.env.OAUTH_CLIENT_ID || 'omada_gemini_client';
+const clientId = process.env.OAUTH_CLIENT_ID || 'omada_test_client';
 const staticToken = process.env.STATIC_OAUTH_TOKEN || process.env.OAUTH_CLIENT_SECRET || 'test_oauth_client_secret';
 
 async function runAuthTests() {
